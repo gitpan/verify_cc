@@ -1,0 +1,152 @@
+=head1 NAME
+
+verify_cc(1) - a Perl program to verify a credit card number
+
+=head1 SYNOPSIS
+
+  verify_cc -{ v | m | a | n } cardnumber
+
+  % verify_cc -v 1123581321345589
+  invalid card number: 1123581321345589
+
+  $ret = system("verify_cc -v 1123581321345589") >> 8;
+  die "verify_cc returned an error: $ret\n" if $ret;
+
+=head1 DESCRIPTION
+
+The verify_cc program is an adaptation of the Credit Card Verifier from
+Matt's Script Archive (but don't go there, please).  It takes two arguments,
+both required:
+
+=over 8
+
+=item card type
+
+A single character (v, m, a, n) preceded by a hyphen, standing respectively
+for Visa, Mastercard, American Express, and Discover.
+
+=item card number
+
+A 13, 15, or 16 digit card number (depending on card type).
+
+=back
+
+Following is a (more or less) line by line description of the program.
+
+=head2 Initialization
+
+Lines 1-17 are just starting up the program.  Line 1 is the path to the Perl
+interpreter, as well as the B<-s> switch for allowing commandline arguments.
+Lines 3-6 declare the C<strict> and C<vars> pragmas, as well as the global
+variables to declare, and the catch() subroutine, along with its prototype.
+Lines 9-17 produce the usage output, if the program is called incorrectly.
+
+   1: #!/usr/bin/perl -s
+   2: 
+   3: use strict;
+   4: use vars qw( $VERSION $USAGE $v $m $a $n );
+   5: 
+   6: sub catch ($$);
+   7: 
+   8: $VERSION = '1.00';
+   9: $USAGE = << "END";
+  10: usage: verify_cc -[ v | m | a | n ] cardnumber
+  11: 
+  12: options:
+  13:   -v	Visa
+  14:   -m	Mastercard
+  15:   -a	American Express
+  16:   -n	Novus
+  17: END
+
+=head2 Argument Processing
+
+Lines 19-25 process the arguments to F<verify_cc>, and set up a couple other
+variables for use (if all goes well).  The four variables, $v, $m, $a, and $n
+are the valid options to F<verify_cc>, and ONE of them can be true, at most.
+Thus, line 21 uses the bitwise XOR on them, to ensure one of them is true,
+and the rest are false.  The program exits with status 1 (explained below) if
+the card type is set incorrectly, or if there is not a second argument.  Lines
+22-25 work with the card number, being sure it only contains digits; the
+length of the number is also recorded.
+
+  19: my ($card,$len,@digits,$sum);
+  20: 
+  21: ($v ^ $m ^ $a ^ $n) or catch 1, $USAGE;
+  22: $card = shift or catch 1, $USAGE;
+  23: $card =~ tr/- //d;
+  24: $card =~ /^(\d+)$/ or catch 2, "invalid card number: $card\n";
+  25: $len = length $card;
+
+=head2 Quality Control
+
+Lines 27-42 make sure that the card is of valid length for its type, and that
+the checksum of the digits is divisible by 10.  Line 34 is special in function:
+if the number of digits is odd, then, because of the method of checksumming, a
+0 is prepended to the list of digits, so that the checksumming process needn't
+be modified for an credit card of odd length.
+
+  26: catch 3, "invalid card length: $len\n" unless
+  27: 	$v && ($len == 13 || $len == 16) ||
+  28: 	$m && $len == 16 ||
+  29: 	$a && $len == 15 ||
+  30: 	$n && $len == 16;
+  32: 
+  33: @digits = split //, $card;
+  34: unshift @digits, 0 if $len % 2;
+  35: 
+  36: for (0..$#digits){
+  37: 	my $d = $digits[$_];
+  38: 	$sum += ($d * (2 - ($_ % 2)) > 9) ? ($d * 2 - 9) : $d;
+  39: }
+  40: catch 2, "invalid card number: $card\n" if $sum % 10;
+  41: 
+  42: catch 0, "$card is perfectly fine.\n";
+
+=head2 The catch() Subroutine
+
+Lines 45-49, the last of the program, define the catch() subroutine, which was
+predeclared much earlier.  It receives a number and a message; the message is
+printed, and the program exits with the return status given it.
+
+  45: sub catch ($$) {
+  46: 	my ($errno,$msg) = @_;
+  47: 	print $msg;
+  48: 	exit $errno;
+  49: }
+
+=head1 EXIT STATUS
+
+The following exit values are returned:
+
+=over 8
+
+=item 0
+
+The card number and type passed the checksum perfectly.
+
+=item 1
+
+The program was invoked incorrectly.  The usage message is returned.
+
+=item 2
+
+The card number contained illegal characters (digits, spaces, and hyphens are
+allowed).
+
+=item 3
+
+The card was of illegal length for its type.
+
+=back
+
+=head1 AUTHOR
+
+Jeff Pinyan, japhy+perl@pobox.com, CPAN ID: PINYAN
+
+=head1 SEE ALSO
+
+http://www.pobox.com/~japhy/perl/crap/001-ccver/article.pod for the
+accompanying article.
+
+=cut

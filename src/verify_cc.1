@@ -1,0 +1,53 @@
+.\"	Comments
+.\"	Comments
+.\"	Comments
+.TH verify_cc 1 "JULY 1999" Unix "User Commands"
+.SH NAME
+.PP
+verify_cc \- Perl program for verifying credit card numbers
+.SH SYNOPSIS
+.PP
+.B verify_cc 
+\-v \fIcardnumber\fP
+.PP
+.B verify_cc 
+\-m \fIcardnumber\fP
+.PP
+.B verify_cc 
+\-a \fIcardnumber\fP
+.PP
+.B verify_cc 
+\-n \fIcardnumber\fP
+.PP
+.nf
+$ret = system("verify_cc -v 1123581321345589") >> 8;
+die "verify_cc returned an error: $ret\\n" if $ret;
+.SH DESCRIPTION
+.PP
+The verify_cc program is an adaptation of the Credit Card Verifier from
+Matt's Script Archive (but don't go there, please).  It takes two arguments,
+both required:
+.IP "card type"
+A single character (v, m, a, n) preceded by a hyphen, standing respectively
+for Visa, Mastercard, American Express, and Discover.
+.IP "card number"
+A 13, 15, or 16 digit card number (depending on card type).
+.SH EXIT STATUS
+.PP
+The following exit values are returned:
+.IP 0
+The card number and type passed the checksum perfectly.
+.IP 1
+The program was invoked incorrectly.  The usage message is returned.
+.IP 2
+The card number contained illegal characters (digits, spaces, and hyphens are
+allowed).
+.IP 3
+The card was of illegal length for its type.
+.SH SEE ALSO
+.PP
+http://www.pobox.com/~japhy/perl/crap/001-ccver/article.pod for the
+accompanying article.
+.SH AUTHOR
+.PP
+Jeff Pinyan, japhy+perl@pobox.com, CPAN ID: PINYAN
